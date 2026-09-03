@@ -49,6 +49,22 @@ app.include_router(webhook_router, prefix="/webhook")
 app.include_router(api_router, prefix="/api")
 app.include_router(payment_callback_router, prefix="/api/payment")
 
+# Root endpoint
+@app.get("/")
+async def root():
+    """Root endpoint with service information"""
+    return {
+        "service": "WhatsApp Conveyancing Bot",
+        "version": "1.0.0",
+        "status": "running",
+        "endpoints": {
+            "health": "/health",
+            "webhook": "/webhook",
+            "api": "/api",
+            "docs": "/docs"
+        }
+    }
+
 # Health check endpoint
 @app.get("/health")
 async def health_check():
