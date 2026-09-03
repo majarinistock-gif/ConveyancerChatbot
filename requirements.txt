@@ -16,7 +16,7 @@ httpx==0.25.1
 python-dotenv==1.0.0
 
 # Payment Integration
-paynow==2.4
+paynow==1.0.8
 
 # OCR Processing
 Pillow==10.1.0
