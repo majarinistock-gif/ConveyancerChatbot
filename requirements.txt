@@ -1,0 +1,32 @@
+# WhatsApp Conveyancing Bot - Python Dependencies
+
+# FastAPI Core
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# Database
+motor==3.3.2
+pymongo==4.6.0
+
+# HTTP Client
+httpx==0.25.1
+
+# Environment Configuration
+python-dotenv==1.0.0
+
+# Payment Integration
+paynow==2.4
+
+# OCR Processing
+Pillow==10.1.0
+pytesseract==0.3.10
+
+# Utilities
+pydantic==2.5.0
+pydantic-settings==2.1.0
+python-dateutil==2.8.2
+
+# Development
+pytest==7.4.3
+pytest-asyncio==0.21.1

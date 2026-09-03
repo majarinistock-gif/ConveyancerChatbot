@@ -1,0 +1,78 @@
+# Render.com Deployment Configuration
+# WhatsApp Conveyancing Bot for Zimbabwe
+
+services:
+  # Web Service for the FastAPI application
+  - type: web
+    name: whatsapp-conveyancing-bot
+    runtime: python
+    plan: free  # Use free tier for development, upgrade for production
+    
+    # Build configuration
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    
+    # Environment variables (these should be set in Render dashboard)
+    envVars:
+      - key: ENVIRONMENT
+        value: sandbox
+      - key: PORT
+        value: 8000
+      - key: PYTHON_VERSION
+        value: 3.9.0
+    
+    # Health check
+    healthCheckPath: /health
+    
+    # Auto-deploy configuration
+    autoDeploy: true
+    
+    # Branch configuration
+    branch: main
+    
+    # Region (choose closest to your users)
+    region: oregon  # Options: oregon, frankfurt, singapore, etc.
+
+# Note: The following environment variables must be configured manually in Render dashboard:
+# - MONGO_URI
+# - MONGO_DATABASE
+# - META_ACCESS_TOKEN
+# - META_PHONE_NUMBER_ID
+# - WHATSAPP_VERIFY_TOKEN
+# - OCR_SPACE_API_KEY
+# - PAYNOW_INTEGRATION_ID
+# - PAYNOW_INTEGRATION_KEY
+# - PAYNOW_RESULT_URL
+# - WEBHOOK_URL
+# - (Optional) META_WABA_ID (for production)
+# - (Optional) META_BUSINESS_ID (for production)
+
+# MongoDB Atlas Setup Instructions:
+# 1. Create MongoDB Atlas account (M0 Free Tier)
+# 2. Create database: conveyancing_bot
+# 3. Create collections: sessions, conveyancers, applications
+# 4. Enable GridFS for file storage
+# 5. Add Render deployment IP to MongoDB IP whitelist
+# 6. Copy MongoDB connection string to Render environment variables
+
+# Meta Developer Setup Instructions:
+# 1. Create Meta Developer account
+# 2. Create WhatsApp Cloud API app in sandbox mode
+# 3. Get Temporary Access Token, Phone Number ID, Test Phone Number
+# 4. Configure webhook URL: https://your-app.onrender.com/webhook
+# 5. Add up to 5 test phone numbers for verification
+# 6. Add credentials to Render environment variables
+
+# Post-Deployment Steps:
+# 1. Run seed_data.py to populate conveyancers collection
+# 2. Test webhook connectivity using Meta dashboard
+# 3. Verify all API endpoints are accessible
+# 4. Test payment flow in sandbox mode
+# 5. Monitor logs for any errors
+
+# Production Upgrade:
+# - Upgrade to paid Render plan for better performance
+# - Move from sandbox to production Meta credentials
+# - Set up proper domain and SSL
+# - Configure monitoring and alerts
+# - Implement backup strategy for MongoDB data
