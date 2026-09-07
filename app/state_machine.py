@@ -13,6 +13,7 @@ from app.database import get_database
 from app.whatsapp_service import send_message
 from app.document_sequences import get_document_sequence
 from app.conditional_logic import evaluate_conditional_documents
+from app.terms_conditions import get_terms_summary
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +112,9 @@ async def handle_state_transition(
     elif current_state == ConversationState.AWAITING_SERVICE_SELECTION:
         return await handle_service_selection(session, message_type, content)
     
+    elif current_state == ConversationState.AWAITING_TERMS_ACCEPTANCE:
+        return await handle_terms_acceptance(session, message_type, content)
+    
     elif current_state == ConversationState.AWAITING_FIRM_SELECTION:
         return await handle_firm_selection(session, message_type, content)
     
@@ -128,6 +132,9 @@ async def handle_state_transition(
     
     elif current_state == ConversationState.AWAITING_TEXT_INPUT:
         return await handle_text_input(session, message_type, content)
+    
+    elif current_state == ConversationState.AWAITING_CASE_DETAILS:
+        return await handle_case_details(session, message_type, content)
     
     elif current_state == ConversationState.COMPLETED:
         return await handle_completed_state(session, message_type, content)
@@ -158,19 +165,64 @@ async def handle_service_selection(session: SessionModel, message_type: str, con
     service_type = map_selection_to_service(selection)
     
     if not service_type:
-        return "Invalid selection. Please choose a number from 1-7 or type the service name."
+        return "Invalid selection. Please choose a number from the list or type the service name."
     
     # Create new application
     application = await create_application(session.phone_number, service_type)
     session.active_application_id = str(application.inserted_id)
+    session.selected_service = service_type
     
     # Set document sequence
     await set_application_document_sequence(session.active_application_id, service_type)
     
-    # Move to next step
-    session.current_step = ConversationState.AWAITING_DOCUMENT_UPLOAD
+    # Move to T&Cs acceptance
+    session.current_step = ConversationState.AWAITING_TERMS_ACCEPTANCE
     
-    return get_requirements_message(service_type) + "\n\n" + get_document_upload_prompt(service_type, 0)
+    return get_terms_summary()
+
+
+async def handle_terms_acceptance(session: SessionModel, message_type: str, content: Dict[str, Any]) -> str:
+    """
+    Handle terms and conditions acceptance
+    """
+    if message_type != "text":
+        return "Please type 'ACCEPT' to agree to the Terms and Conditions, or 'DECLINE' to cancel."
+    
+    response = content.get("body", "").strip().upper()
+    
+    if response == "ACCEPT":
+        # Store terms acceptance
+        await update_application_terms_acceptance(session.active_application_id, True)
+        
+        # Move to next step based on service type
+        service_type = session.selected_service
+        
+        # Check if service requires document upload or case details
+        if service_type in [
+            ServiceType.LEGAL_OPINION,
+            ServiceType.REGULATORY_COMPLIANCE,
+            ServiceType.RISK_ASSESSMENT,
+            ServiceType.NEGOTIATION,
+            ServiceType.MEDIATION_ARBITRATION
+        ]:
+            # These services require case details first
+            session.current_step = ConversationState.AWAITING_CASE_DETAILS
+            return get_case_details_prompt(service_type)
+        else:
+            # These services require document upload
+            session.current_step = ConversationState.AWAITING_DOCUMENT_UPLOAD
+            return get_requirements_message(service_type) + "\n\n" + get_document_upload_prompt(service_type, 0)
+    
+    elif response == "DECLINE":
+        # Cancel application
+        await cancel_application(session.active_application_id)
+        session.active_application_id = None
+        session.selected_service = None
+        session.current_step = ConversationState.GREETING
+        return "Application cancelled. Type 'menu' to start over."
+    
+    else:
+        return "Invalid response. Please type 'ACCEPT' to agree to the Terms and Conditions, or 'DECLINE' to cancel."
 
 
 async def handle_firm_selection(session: SessionModel, message_type: str, content: Dict[str, Any]) -> str:
@@ -342,15 +394,37 @@ async def handle_status_check(session: SessionModel) -> str:
 
 def get_greeting_message() -> str:
     """Get initial greeting message"""
-    return ("🏠 Welcome to the Zimbabwe Property Conveyancing Bot!\n\n"
-            "I can help you with:\n"
+    return ("🏠 Welcome to the Zimbabwe Legal Services Bot!\n\n"
+            "I can help you with:\n\n"
+            "*Conveyancing & Property Functions*\n"
             "1. Deed of Transfer\n"
             "2. Deeds Office Search\n"
             "3. Certificate of Registered Title (CRT)\n"
             "4. Deed of Partition\n"
             "5. Deed of Exchange\n"
             "6. Deed of Rectification\n"
-            "7. Deed of Grant\n\n"
+            "7. Deed of Grant\n"
+            "8. Securities Registration (Mortgage/Notarial Bond)\n"
+            "9. Property Due Diligence\n\n"
+            "*Advisory & Consultative Functions*\n"
+            "10. Legal Opinion Provision\n"
+            "11. Regulatory Compliance Advice\n"
+            "12. Risk Assessment\n\n"
+            "*Representative & Advocacy Functions*\n"
+            "13. Civil Representation\n"
+            "14. Criminal Defence\n"
+            "15. Administrative Advocacy\n\n"
+            "*Notarial & Transactional Functions*\n"
+            "16. Document Authentication (Notary Public)\n"
+            "17. Antenuptial Contract (ANC)\n"
+            "18. Protests (Bills of Exchange)\n\n"
+            "*Document Drafting & Commercial Functions*\n"
+            "19. Commercial Agreements Drafting\n"
+            "20. Estate Planning (Will & Testament)\n"
+            "21. Estate Administration\n\n"
+            "*Alternative Dispute Resolution (ADR)*\n"
+            "22. Negotiation Support\n"
+            "23. Mediation & Arbitration\n\n"
             "Please select a service by typing the number or name.")
 
 
@@ -547,9 +621,55 @@ async def process_firm_selection(session: SessionModel, selection: str) -> str:
     return "Firm selection not yet implemented."
 
 
+async def update_application_terms_acceptance(application_id: str, accepted: bool):
+    """Update application with terms acceptance status"""
+    database = get_database()
+    await database.applications.update_one(
+        {"_id": application_id},
+        {"$set": {"terms_accepted": accepted, "terms_accepted_at": datetime.utcnow()}}
+    )
+
+
+async def cancel_application(application_id: str):
+    """Cancel application"""
+    database = get_database()
+    await database.applications.update_one(
+        {"_id": application_id},
+        {"$set": {"status": "CANCELLED"}}
+    )
+
+
+async def handle_case_details(session: SessionModel, message_type: str, content: Dict[str, Any]) -> str:
+    """
+    Handle case details input for advisory/consultative services
+    """
+    if message_type != "text":
+        return "Please provide your case details in text format."
+    
+    case_details = content.get("body", "").strip()
+    
+    # Store case details
+    await store_case_details(session.active_application_id, case_details)
+    
+    # Move to payment
+    session.current_step = ConversationState.AWAITING_PAYMENT_METHOD
+    
+    return get_payment_method_selection_message()
+
+
+async def store_case_details(application_id: str, details: str):
+    """Store case details for application"""
+    database = get_database()
+    await database.applications.update_one(
+        {"_id": application_id},
+        {"$set": {"case_details": details}}
+    )
+
+
 def map_selection_to_service(selection: str) -> Optional[ServiceType]:
     """Map user selection to service type"""
     service_map = {
+        # Conveyancing & Property Functions
         "1": ServiceType.DEED_OF_TRANSFER,
         "deed of transfer": ServiceType.DEED_OF_TRANSFER,
         "transfer": ServiceType.DEED_OF_TRANSFER,
@@ -577,7 +697,81 @@ def map_selection_to_service(selection: str) -> Optional[ServiceType]:
         
         "7": ServiceType.DEED_OF_GRANT,
         "deed of grant": ServiceType.DEED_OF_GRANT,
-        "grant": ServiceType.DEED_OF_GRANT
+        "grant": ServiceType.DEED_OF_GRANT,
+        
+        "8": ServiceType.SECURITIES_REGISTRATION,
+        "securities registration": ServiceType.SECURITIES_REGISTRATION,
+        "mortgage bond": ServiceType.SECURITIES_REGISTRATION,
+        "notarial bond": ServiceType.SECURITIES_REGISTRATION,
+        
+        "9": ServiceType.PROPERTY_DUE_DILIGENCE,
+        "property due diligence": ServiceType.PROPERTY_DUE_DILIGENCE,
+        "due diligence": ServiceType.PROPERTY_DUE_DILIGENCE,
+        
+        # Advisory & Consultative Functions
+        "10": ServiceType.LEGAL_OPINION,
+        "legal opinion": ServiceType.LEGAL_OPINION,
+        "opinion": ServiceType.LEGAL_OPINION,
+        
+        "11": ServiceType.REGULATORY_COMPLIANCE,
+        "regulatory compliance": ServiceType.REGULATORY_COMPLIANCE,
+        "compliance": ServiceType.REGULATORY_COMPLIANCE,
+        
+        "12": ServiceType.RISK_ASSESSMENT,
+        "risk assessment": ServiceType.RISK_ASSESSMENT,
+        "risk": ServiceType.RISK_ASSESSMENT,
+        
+        # Representative & Advocacy Functions (Litigation)
+        "13": ServiceType.CIVIL_REPRESENTATION,
+        "civil representation": ServiceType.CIVIL_REPRESENTATION,
+        "civil case": ServiceType.CIVIL_REPRESENTATION,
+        
+        "14": ServiceType.CRIMINAL_DEFENCE,
+        "criminal defence": ServiceType.CRIMINAL_DEFENCE,
+        "criminal case": ServiceType.CRIMINAL_DEFENCE,
+        
+        "15": ServiceType.ADMINISTRATIVE_ADVOCACY,
+        "administrative advocacy": ServiceType.ADMINISTRATIVE_ADVOCACY,
+        "tribunal": ServiceType.ADMINISTRATIVE_ADVOCACY,
+        
+        # Notarial & Transactional Functions
+        "16": ServiceType.DOCUMENT_AUTHENTICATION,
+        "document authentication": ServiceType.DOCUMENT_AUTHENTICATION,
+        "notary": ServiceType.DOCUMENT_AUTHENTICATION,
+        
+        "17": ServiceType.ANTENUPTIAL_CONTRACT,
+        "antenuptial contract": ServiceType.ANTENUPTIAL_CONTRACT,
+        "anc": ServiceType.ANTENUPTIAL_CONTRACT,
+        "prenuptial": ServiceType.ANTENUPTIAL_CONTRACT,
+        
+        "18": ServiceType.PROTESTS,
+        "protests": ServiceType.PROTESTS,
+        "bills of exchange": ServiceType.PROTESTS,
+        
+        # Document Drafting & Commercial Functions
+        "19": ServiceType.COMMERCIAL_AGREEMENTS,
+        "commercial agreements": ServiceType.COMMERCIAL_AGREEMENTS,
+        "contracts": ServiceType.COMMERCIAL_AGREEMENTS,
+        
+        "20": ServiceType.ESTATE_PLANNING,
+        "estate planning": ServiceType.ESTATE_PLANNING,
+        "will": ServiceType.ESTATE_PLANNING,
+        "testament": ServiceType.ESTATE_PLANNING,
+        
+        "21": ServiceType.ESTATE_ADMINISTRATION,
+        "estate administration": ServiceType.ESTATE_ADMINISTRATION,
+        "executor": ServiceType.ESTATE_ADMINISTRATION,
+        
+        # Alternative Dispute Resolution (ADR)
+        "22": ServiceType.NEGOTIATION,
+        "negotiation": ServiceType.NEGOTIATION,
+        "settlement": ServiceType.NEGOTIATION,
+        
+        "23": ServiceType.MEDIATION_ARBITRATION,
+        "mediation arbitration": ServiceType.MEDIATION_ARBITRATION,
+        "adr": ServiceType.MEDIATION_ARBITRATION,
+        "mediation": ServiceType.MEDIATION_ARBITRATION,
+        "arbitration": ServiceType.MEDIATION_ARBITRATION
     }
     
     return service_map.get(selection.lower())
@@ -608,3 +802,25 @@ def get_payment_details_prompt(payment_method: PaymentMethod) -> str:
     }
     
     return prompts.get(payment_method, "Please provide your payment details.")
+
+
+def get_case_details_prompt(service_type: ServiceType) -> str:
+    """Get case details prompt for advisory/consultative services"""
+    prompts = {
+        ServiceType.LEGAL_OPINION: "Please provide a brief description of your situation for a legal opinion assessment:\n\nInclude relevant facts, parties involved, and specific questions you need answered.",
+        ServiceType.REGULATORY_COMPLIANCE: "Please describe your regulatory compliance concern:\n\nInclude the industry, specific regulations, and compliance requirements you need guidance on.",
+        ServiceType.RISK_ASSESSMENT: "Please describe the situation you need a risk assessment for:\n\nInclude the business/personal decision, potential risks you've identified, and any relevant context.",
+        ServiceType.NEGOTIATION: "Please describe the dispute or negotiation situation:\n\nInclude parties involved, key issues, desired outcomes, and any prior communication.",
+        ServiceType.MEDIATION_ARBITRATION: "Please describe the dispute requiring mediation/arbitration:\n\nInclude parties involved, nature of dispute, desired resolution, and any prior attempts at resolution."
+    }
+    
+    return prompts.get(service_type, "Please provide details about your case.")
+
+
+def get_payment_method_selection_message() -> str:
+    """Get payment method selection message"""
+    return ("Please select a payment method:\n\n"
+            "1. EcoCash\n"
+            "2. InnBucks\n"
+            "3. OneMoney\n\n"
+            "Type the number to select.")

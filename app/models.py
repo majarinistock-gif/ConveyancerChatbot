@@ -9,7 +9,9 @@ from enum import Enum
 
 
 class ServiceType(str, Enum):
-    """Available conveyancing service types"""
+    """Available legal service types across all categories"""
+    
+    # Conveyancing & Property Functions
     DEED_OF_TRANSFER = "Deed of Transfer"
     DEEDS_OFFICE_SEARCH = "Deeds Office Search"
     CERTIFICATE_OF_REGISTERED_TITLE = "Certificate of Registered Title (CRT)"
@@ -17,18 +19,46 @@ class ServiceType(str, Enum):
     DEED_OF_EXCHANGE = "Deed of Exchange"
     DEED_OF_RECTIFICATION = "Deed of Rectification"
     DEED_OF_GRANT = "Deed of Grant"
+    SECURITIES_REGISTRATION = "Securities Registration (Mortgage/Notarial Bond)"
+    PROPERTY_DUE_DILIGENCE = "Property Due Diligence"
+    
+    # Advisory & Consultative Functions
+    LEGAL_OPINION = "Legal Opinion Provision"
+    REGULATORY_COMPLIANCE = "Regulatory Compliance Advice"
+    RISK_ASSESSMENT = "Risk Assessment"
+    
+    # Representative & Advocacy Functions (Litigation)
+    CIVIL_REPRESENTATION = "Civil Representation"
+    CRIMINAL_DEFENCE = "Criminal Defence"
+    ADMINISTRATIVE_ADVOCACY = "Administrative Advocacy"
+    
+    # Notarial & Transactional Functions
+    DOCUMENT_AUTHENTICATION = "Document Authentication (Notary Public)"
+    ANTENUPTIAL_CONTRACT = "Antenuptial Contract (ANC)"
+    PROTESTS = "Protests (Bills of Exchange)"
+    
+    # Document Drafting & Commercial Functions
+    COMMERCIAL_AGREEMENTS = "Commercial Agreements Drafting"
+    ESTATE_PLANNING = "Estate Planning (Will & Testament)"
+    ESTATE_ADMINISTRATION = "Estate Administration"
+    
+    # Alternative Dispute Resolution (ADR)
+    NEGOTIATION = "Negotiation Support"
+    MEDIATION_ARBITRATION = "Mediation & Arbitration"
 
 
 class ConversationState(str, Enum):
     """Conversation flow states"""
     GREETING = "GREETING"
     AWAITING_SERVICE_SELECTION = "AWAITING_SERVICE_SELECTION"
+    AWAITING_TERMS_ACCEPTANCE = "AWAITING_TERMS_ACCEPTANCE"
     AWAITING_FIRM_SELECTION = "AWAITING_FIRM_SELECTION"
     AWAITING_PAYMENT_METHOD = "AWAITING_PAYMENT_METHOD"
     AWAITING_PAYMENT_DETAILS = "AWAITING_PAYMENT_DETAILS"
     AWAITING_DOCUMENT_UPLOAD = "AWAITING_DOCUMENT_UPLOAD"
     AWAITING_OCR_CONFIRMATION = "AWAITING_OCR_CONFIRMATION"
     AWAITING_TEXT_INPUT = "AWAITING_TEXT_INPUT"
+    AWAITING_CASE_DETAILS = "AWAITING_CASE_DETAILS"
     COMPLETED = "COMPLETED"
 
 
@@ -192,6 +222,27 @@ class DocumentUrls(BaseModel):
     rectification_form_url: Optional[str] = None
     allocation_letter_url: Optional[str] = None
     draft_deed_of_grant_url: Optional[str] = None
+    # New document URLs for additional services
+    mortgage_agreement_url: Optional[str] = None
+    property_valuation_url: Optional[str] = None
+    case_documents_url: Optional[str] = None
+    court_papers_url: Optional[str] = None
+    evidence_documents_url: Optional[str] = None
+    charge_sheet_url: Optional[str] = None
+    bail_documents_url: Optional[str] = None
+    tribunal_papers_url: Optional[str] = None
+    document_to_authenticate_url: Optional[str] = None
+    marriage_certificate_url: Optional[str] = None
+    property_list_url: Optional[str] = None
+    draft_anc_url: Optional[str] = None
+    bill_of_exchange_url: Optional[str] = None
+    draft_agreement_url: Optional[str] = None
+    asset_list_url: Optional[str] = None
+    draft_will_url: Optional[str] = None
+    death_certificate_url: Optional[str] = None
+    will_document_url: Optional[str] = None
+    estate_inventory_url: Optional[str] = None
+    master_of_high_court_documents_url: Optional[str] = None
     
     class Config:
         json_schema_extra = {
@@ -289,6 +340,7 @@ class SessionModel(BaseModel):
     """User session document"""
     phone_number: str = Field(..., alias="_id")
     active_application_id: Optional[str] = None
+    selected_service: Optional[ServiceType] = None
     current_step: ConversationState = ConversationState.GREETING
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     
@@ -356,6 +408,9 @@ class ApplicationModel(BaseModel):
     
     # Additional metadata
     text_inputs: Dict[str, str] = Field(default_factory=dict)
+    case_details: Optional[str] = None  # For advisory/consultative services
+    terms_accepted: bool = False  # T&Cs acceptance status
+    terms_accepted_at: Optional[datetime] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     

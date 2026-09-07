@@ -21,13 +21,40 @@ class DocumentSequences:
             List of document identifiers in upload order
         """
         sequences = {
+            # Conveyancing & Property Functions
             ServiceType.DEED_OF_TRANSFER: DocumentSequences._deed_of_transfer(),
             ServiceType.DEEDS_OFFICE_SEARCH: DocumentSequences._deeds_office_search(),
             ServiceType.CERTIFICATE_OF_REGISTERED_TITLE: DocumentSequences._certificate_of_registered_title(),
             ServiceType.DEED_OF_PARTITION: DocumentSequences._deed_of_partition(),
             ServiceType.DEED_OF_EXCHANGE: DocumentSequences._deed_of_exchange(),
             ServiceType.DEED_OF_RECTIFICATION: DocumentSequences._deed_of_rectification(),
-            ServiceType.DEED_OF_GRANT: DocumentSequences._deed_of_grant()
+            ServiceType.DEED_OF_GRANT: DocumentSequences._deed_of_grant(),
+            ServiceType.SECURITIES_REGISTRATION: DocumentSequences._securities_registration(),
+            ServiceType.PROPERTY_DUE_DILIGENCE: DocumentSequences._property_due_diligence(),
+            
+            # Advisory & Consultative Functions (no documents required - case details only)
+            ServiceType.LEGAL_OPINION: [],
+            ServiceType.REGULATORY_COMPLIANCE: [],
+            ServiceType.RISK_ASSESSMENT: [],
+            
+            # Representative & Advocacy Functions (Litigation)
+            ServiceType.CIVIL_REPRESENTATION: DocumentSequences._civil_representation(),
+            ServiceType.CRIMINAL_DEFENCE: DocumentSequences._criminal_defence(),
+            ServiceType.ADMINISTRATIVE_ADVOCACY: DocumentSequences._administrative_advocacy(),
+            
+            # Notarial & Transactional Functions
+            ServiceType.DOCUMENT_AUTHENTICATION: DocumentSequences._document_authentication(),
+            ServiceType.ANTENUPTIAL_CONTRACT: DocumentSequences._antenuptial_contract(),
+            ServiceType.PROTESTS: DocumentSequences._protests(),
+            
+            # Document Drafting & Commercial Functions
+            ServiceType.COMMERCIAL_AGREEMENTS: DocumentSequences._commercial_agreements(),
+            ServiceType.ESTATE_PLANNING: DocumentSequences._estate_planning(),
+            ServiceType.ESTATE_ADMINISTRATION: DocumentSequences._estate_administration(),
+            
+            # Alternative Dispute Resolution (ADR)
+            ServiceType.NEGOTIATION: [],
+            ServiceType.MEDIATION_ARBITRATION: []
         }
         
         return sequences.get(service_type, [])
@@ -94,6 +121,198 @@ class DocumentSequences:
                 "type": "id_document",
                 "ocr_required": True,
                 "formats": ["jpg", "jpeg", "png", "pdf"]
+            },
+            
+            # New Document Types for Additional Services
+            "mortgage_agreement": {
+                "name": "Mortgage Agreement",
+                "description": "Mortgage or bond agreement document",
+                "type": "document",
+                "formats": ["pdf"]
+            },
+            "property_valuation": {
+                "name": "Property Valuation Report",
+                "description": "Professional property valuation report",
+                "type": "document",
+                "formats": ["pdf"]
+            },
+            "identity_documents": {
+                "name": "Identity Documents",
+                "description": "Additional identity documents for all parties",
+                "type": "document",
+                "multiple": True,
+                "formats": ["jpg", "jpeg", "png", "pdf"]
+            },
+            "case_documents": {
+                "name": "Case Documents",
+                "description": "Relevant documents for the civil case",
+                "type": "document",
+                "multiple": True,
+                "formats": ["pdf", "jpg", "jpeg", "png"]
+            },
+            "court_papers": {
+                "name": "Court Papers",
+                "description": "Filed court documents and pleadings",
+                "type": "document",
+                "multiple": True,
+                "formats": ["pdf"]
+            },
+            "evidence_documents": {
+                "name": "Evidence Documents",
+                "description": "Supporting evidence documents",
+                "type": "document",
+                "multiple": True,
+                "formats": ["pdf", "jpg", "jpeg", "png"]
+            },
+            "charge_sheet": {
+                "name": "Charge Sheet",
+                "description": "Official charge sheet from prosecution",
+                "type": "document",
+                "formats": ["pdf"]
+            },
+            "bail_documents": {
+                "name": "Bail Documents",
+                "description": "Bail application and supporting documents",
+                "type": "document",
+                "multiple": True,
+                "formats": ["pdf"]
+            },
+            "tribunal_papers": {
+                "name": "Tribunal Papers",
+                "description": "Documents filed with the tribunal",
+                "type": "document",
+                "multiple": True,
+                "formats": ["pdf"]
+            },
+            "document_to_authenticate": {
+                "name": "Document to Authenticate",
+                "description": "Document requiring notary authentication",
+                "type": "document",
+                "formats": ["pdf", "jpg", "jpeg", "png"]
+            },
+            "spouse_a_id": {
+                "name": "Spouse A's ID Document",
+                "description": "National ID or passport of first spouse",
+                "type": "id_document",
+                "ocr_required": True,
+                "formats": ["jpg", "jpeg", "png", "pdf"]
+            },
+            "spouse_b_id": {
+                "name": "Spouse B's ID Document",
+                "description": "National ID or passport of second spouse",
+                "type": "id_document",
+                "ocr_required": True,
+                "formats": ["jpg", "jpeg", "png", "pdf"]
+            },
+            "marriage_certificate": {
+                "name": "Marriage Certificate",
+                "description": "Official marriage certificate",
+                "type": "document",
+                "formats": ["pdf", "jpg", "jpeg", "png"]
+            },
+            "property_list": {
+                "name": "Property List",
+                "description": "List of properties covered by ANC",
+                "type": "document",
+                "formats": ["pdf"]
+            },
+            "draft_anc": {
+                "name": "Draft Antenuptial Contract",
+                "description": "Draft ANC document for review",
+                "type": "document",
+                "formats": ["pdf"]
+            },
+            "bill_of_exchange": {
+                "name": "Bill of Exchange",
+                "description": "Bill of exchange document for protest",
+                "type": "document",
+                "formats": ["pdf"]
+            },
+            "holder_id": {
+                "name": "Holder's ID Document",
+                "description": "National ID or passport of bill holder",
+                "type": "id_document",
+                "ocr_required": True,
+                "formats": ["jpg", "jpeg", "png", "pdf"]
+            },
+            "party_a_id": {
+                "name": "Party A's ID Document",
+                "description": "National ID or passport of first party",
+                "type": "id_document",
+                "ocr_required": True,
+                "formats": ["jpg", "jpeg", "png", "pdf"]
+            },
+            "party_b_id": {
+                "name": "Party B's ID Document",
+                "description": "National ID or passport of second party",
+                "type": "id_document",
+                "ocr_required": True,
+                "formats": ["jpg", "jpeg", "png", "pdf"]
+            },
+            "draft_agreement": {
+                "name": "Draft Commercial Agreement",
+                "description": "Draft commercial agreement for review",
+                "type": "document",
+                "formats": ["pdf"]
+            },
+            "testator_id": {
+                "name": "Testator's ID Document",
+                "description": "National ID or passport of testator",
+                "type": "id_document",
+                "ocr_required": True,
+                "formats": ["jpg", "jpeg", "png", "pdf"]
+            },
+            "beneficiary_ids": {
+                "name": "Beneficiaries' ID Documents",
+                "description": "National IDs or passports of all beneficiaries",
+                "type": "id_document",
+                "multiple": True,
+                "ocr_required": True,
+                "formats": ["jpg", "jpeg", "png", "pdf"]
+            },
+            "asset_list": {
+                "name": "Asset List",
+                "description": "List of assets to be included in will",
+                "type": "document",
+                "formats": ["pdf"]
+            },
+            "draft_will": {
+                "name": "Draft Will",
+                "description": "Draft last will and testament",
+                "type": "document",
+                "formats": ["pdf"]
+            },
+            "executor_id": {
+                "name": "Executor's ID Document",
+                "description": "National ID or passport of executor",
+                "type": "id_document",
+                "ocr_required": True,
+                "formats": ["jpg", "jpeg", "png", "pdf"]
+            },
+            "death_certificate": {
+                "name": "Death Certificate",
+                "description": "Official death certificate of deceased",
+                "type": "document",
+                "formats": ["pdf", "jpg", "jpeg", "png"]
+            },
+            "will_document": {
+                "name": "Will Document",
+                "description": "Original will document",
+                "type": "document",
+                "formats": ["pdf"]
+            },
+            "estate_inventory": {
+                "name": "Estate Inventory",
+                "description": "Complete inventory of estate assets",
+                "type": "document",
+                "formats": ["pdf"]
+            },
+            "master_of_high_court_documents": {
+                "name": "Master of High Court Documents",
+                "description": "Documents from Master of High Court",
+                "type": "document",
+                "multiple": True,
+                "formats": ["pdf"]
             },
             
             # Title Deeds
@@ -438,6 +657,119 @@ class DocumentSequences:
             "surveyor_general_diagram",
             "ministry_clearance",
             "draft_deed_of_grant"
+        ]
+    
+    # New Service Document Sequences
+    
+    @staticmethod
+    def _securities_registration() -> List[str]:
+        """Document sequence for Securities Registration (Mortgage/Notarial Bond)"""
+        return [
+            "owner_id",
+            "title_deed",
+            "mortgage_agreement",
+            "property_valuation",
+            "identity_documents"
+        ]
+    
+    @staticmethod
+    def _property_due_diligence() -> List[str]:
+        """Document sequence for Property Due Diligence"""
+        return [
+            "property_description",
+            "owner_id",
+            "title_deed",
+            "surveyor_general_diagram"
+        ]
+    
+    @staticmethod
+    def _civil_representation() -> List[str]:
+        """Document sequence for Civil Representation"""
+        return [
+            "client_id",
+            "case_documents",
+            "court_papers",
+            "evidence_documents"
+        ]
+    
+    @staticmethod
+    def _criminal_defence() -> List[str]:
+        """Document sequence for Criminal Defence"""
+        return [
+            "accused_id",
+            "charge_sheet",
+            "bail_documents",
+            "evidence_documents"
+        ]
+    
+    @staticmethod
+    def _administrative_advocacy() -> List[str]:
+        """Document sequence for Administrative Advocacy"""
+        return [
+            "client_id",
+            "tribunal_papers",
+            "supporting_documents",
+            "evidence"
+        ]
+    
+    @staticmethod
+    def _document_authentication() -> List[str]:
+        """Document sequence for Document Authentication (Notary Public)"""
+        return [
+            "document_to_authenticate",
+            "owner_id",
+            "supporting_id"
+        ]
+    
+    @staticmethod
+    def _antenuptial_contract() -> List[str]:
+        """Document sequence for Antenuptial Contract (ANC)"""
+        return [
+            "spouse_a_id",
+            "spouse_b_id",
+            "marriage_certificate",
+            "property_list",
+            "draft_anc"
+        ]
+    
+    @staticmethod
+    def _protests() -> List[str]:
+        """Document sequence for Protests (Bills of Exchange)"""
+        return [
+            "bill_of_exchange",
+            "holder_id",
+            "supporting_documents"
+        ]
+    
+    @staticmethod
+    def _commercial_agreements() -> List[str]:
+        """Document sequence for Commercial Agreements Drafting"""
+        return [
+            "party_a_id",
+            "party_b_id",
+            "draft_agreement",
+            "supporting_documents"
+        ]
+    
+    @staticmethod
+    def _estate_planning() -> List[str]:
+        """Document sequence for Estate Planning (Will & Testament)"""
+        return [
+            "testator_id",
+            "beneficiary_ids",
+            "asset_list",
+            "draft_will"
+        ]
+    
+    @staticmethod
+    def _estate_administration() -> List[str]:
+        """Document sequence for Estate Administration"""
+        return [
+            "executor_id",
+            "death_certificate",
+            "will_document",
+            "estate_inventory",
+            "master_of_high_court_documents"
         ]
 
 

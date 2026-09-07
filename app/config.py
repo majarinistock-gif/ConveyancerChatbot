@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     META_WABA_ID: Optional[str] = None
     META_BUSINESS_ID: Optional[str] = None
     
+    # Test Phone Number (for sandbox testing)
+    TEST_PHONE_NUMBER: Optional[str] = None
+    
     # OCR.space Configuration
     OCR_SPACE_API_KEY: str
     OCR_SPACE_ENGINE: int = 3
