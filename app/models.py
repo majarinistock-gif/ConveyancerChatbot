@@ -41,6 +41,100 @@ class PaymentStatus(str, Enum):
     REFUNDED = "REFUNDED"
 
 
+class CaseStatus(str, Enum):
+    """Case status types for SLA state machine"""
+    NEW = "NEW"
+    ASSIGNED = "ASSIGNED"
+    WAITING_RESPONSE = "WAITING_RESPONSE"
+    COMPLETE = "COMPLETE"
+    PRACTITIONER_DEFAULT = "PRACTITIONER_DEFAULT"
+    REFUNDED = "REFUNDED"
+    CLOSED = "CLOSED"
+
+
+class SLATimerState(str, Enum):
+    """SLA timer state types"""
+    NOT_STARTED = "NOT_STARTED"
+    RUNNING = "RUNNING"
+    COMPLETE = "COMPLETE"
+    PRACTITIONER_DEFAULT = "PRACTITIONER_DEFAULT"
+    REFUND_TRIGGERED = "REFUND_TRIGGERED"
+
+
+class LedgerAllocationType(str, Enum):
+    """Ledger allocation types"""
+    SYSTEM_ADMIN_COSTS = "SYSTEM_ADMIN_COSTS"
+    ATTENDING_ESCROW_VAULT = "ATTENDING_ESCROW_VAULT"
+    REFUND_SETTLEMENT = "REFUND_SETTLEMENT"
+    REVERSAL_ADJUSTMENT = "REVERSAL_ADJUSTMENT"
+
+
+class LedgerDirection(str, Enum):
+    """Ledger direction types"""
+    CREDIT = "CREDIT"
+    DEBIT = "DEBIT"
+
+
+class LedgerState(str, Enum):
+    """Ledger state types"""
+    PENDING = "PENDING"
+    ALLOCATED = "ALLOCATED"
+    RELEASED = "RELEASED"
+    REVERSED = "REVERSED"
+    REFUNDED = "REFUNDED"
+    FAILED = "FAILED"
+
+
+class EscrowStatus(str, Enum):
+    """Escrow vault status types"""
+    ALLOCATED = "ALLOCATED"
+    HELD = "HELD"
+    RELEASED = "RELEASED"
+    REVERSED = "REVERSED"
+    REFUNDED = "REFUNDED"
+
+
+class ConflictCheckStatus(str, Enum):
+    """Conflict of interest check status"""
+    NOT_RUN = "NOT_RUN"
+    PASSED = "PASSED"
+    FAILED = "FAILED"
+
+
+class FirmStatus(str, Enum):
+    """Law firm status types"""
+    ACTIVE = "ACTIVE"
+    SUSPENDED = "SUSPENDED"
+    REVOKED = "REVOKED"
+
+
+class PractitionerRole(str, Enum):
+    """Practitioner role types"""
+    LEGAL_PRACTITIONER = "LEGAL_PRACTITIONER"
+    CONVEYANCER = "CONVEYANCER"
+    NOTARY = "NOTARY"
+    ASSOCIATE = "ASSOCIATE"
+    PARTNER = "PARTNER"
+    MANAGER = "MANAGER"
+
+
+class SeatType(str, Enum):
+    """Seat type for practitioners"""
+    COMPLIMENTARY = "COMPLIMENTARY"
+    PAID_EXTRA = "PAID_EXTRA"
+
+
+class AccessEventType(str, Enum):
+    """Access event types for audit trail"""
+    VIEW = "VIEW"
+    EDIT = "EDIT"
+    EXPORT = "EXPORT"
+    ACKNOWLEDGE = "ACKNOWLEDGE"
+    RESPOND = "RESPOND"
+    ASSIGN = "ASSIGN"
+    REVOKE = "REVOKE"
+
+
 class VerificationStatus(str, Enum):
     """Application verification status"""
     AWAITING_REVIEW = "AWAITING_REVIEW"
@@ -171,6 +265,25 @@ class VerificationInfo(BaseModel):
         }
 
 
+class SLATimerInfo(BaseModel):
+    """SLA timer information for 72-hour rule"""
+    state: SLATimerState = SLATimerState.NOT_STARTED
+    started_at: Optional[datetime] = None
+    deadline_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
+    acknowledgment_received_at: Optional[datetime] = None
+    response_received_at: Optional[datetime] = None
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "state": "RUNNING",
+                "started_at": "2026-09-03T10:00:00.000Z",
+                "deadline_at": "2026-09-06T10:00:00.000Z"
+            }
+        }
+
+
 # MongoDB Document Models
 class SessionModel(BaseModel):
     """User session document"""
@@ -215,7 +328,7 @@ class ConveyancerModel(BaseModel):
 
 
 class ApplicationModel(BaseModel):
-    """Property conveyancing application document"""
+    """Property conveyancing application document (Case/Dossier)"""
     owner_phone: str
     service_type: ServiceType
     extracted_profile: Optional[ExtractedProfile] = None
@@ -223,6 +336,17 @@ class ApplicationModel(BaseModel):
     selected_conveyancer: Optional[SelectedConveyancer] = None
     payment: PaymentInfo = Field(default_factory=PaymentInfo)
     verification: VerificationInfo = Field(default_factory=VerificationInfo)
+    
+    # SLA and case status fields
+    case_status: CaseStatus = CaseStatus.NEW
+    sla_timer: SLATimerInfo = Field(default_factory=SLATimerInfo)
+    conflict_check_status: ConflictCheckStatus = ConflictCheckStatus.NOT_RUN
+    future_crime_routing: bool = False
+    
+    # Paynow integration fields
+    paynow_payment_request_id: Optional[str] = None
+    paynow_confirmed_at: Optional[datetime] = None
+    timer_deadline_at: Optional[datetime] = None
     
     # Document upload tracking
     current_document_index: int = 0
@@ -268,6 +392,11 @@ class ApplicationModel(BaseModel):
                     "status": "AWAITING_REVIEW",
                     "rejection_reason": None
                 },
+                "case_status": "NEW",
+                "sla_timer": {
+                    "state": "NOT_STARTED"
+                },
+                "conflict_check_status": "NOT_RUN",
                 "created_at": "2026-09-03T10:32:00.000Z"
             }
         }
@@ -303,3 +432,105 @@ class ApplicationResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     verification_status: str
+    case_status: CaseStatus
+    sla_deadline: Optional[datetime] = None
+
+
+# New models for documentation compliance
+
+class LawFirmModel(BaseModel):
+    """Law firm document for seat cap management"""
+    firm_id: str
+    firm_name: str
+    lsz_registration_no: str
+    status: FirmStatus = FirmStatus.ACTIVE
+    seat_cap_complimentary: int = 2
+    seat_fee_per_extra: float = 200.00
+    billing_currency: str = "USD"
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    
+    class Config:
+        collection = "law_firms"
+
+
+class FirmPractitionerModel(BaseModel):
+    """Practitioner enrollment in law firm"""
+    practitioner_id: str
+    firm_id: str
+    full_name: str
+    role_title: PractitionerRole
+    is_active: bool = True
+    seat_type: SeatType = SeatType.COMPLIMENTARY
+    paid_extra_seat_amount: float = 0.00
+    enrolled_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    class Config:
+        collection = "firm_practitioners"
+
+
+class PlatformLedgerModel(BaseModel):
+    """Platform ledger for payment splits and reversals"""
+    ledger_id: str
+    case_id: str
+    payment_request_id: str
+    paynow_transaction_ref: Optional[str] = None
+    allocation_type: LedgerAllocationType
+    direction: LedgerDirection
+    amount_usd: float
+    currency: str = "USD"
+    state: LedgerState = LedgerState.PENDING
+    escrow_recipient_id: Optional[str] = None
+    reconciliation_note: Optional[str] = None
+    idempotency_key: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    class Config:
+        collection = "platform_ledgers"
+
+
+class EscrowVaultModel(BaseModel):
+    """Escrow vault for practitioner payments"""
+    escrow_vault_id: str
+    firm_id: str
+    practitioner_id: Optional[str] = None
+    case_id: str
+    escrow_amount_usd: float = 0.00
+    status: EscrowStatus = EscrowStatus.ALLOCATED
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    class Config:
+        collection = "escrow_vaults"
+
+
+class SLATimerModel(BaseModel):
+    """SLA timer for 72-hour rule"""
+    timer_id: str
+    case_id: str
+    state: SLATimerState = SLATimerState.NOT_STARTED
+    started_at: Optional[datetime] = None
+    deadline_at: datetime
+    ended_at: Optional[datetime] = None
+    acknowledgment_received_at: Optional[datetime] = None
+    response_received_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    
+    class Config:
+        collection = "sla_timers"
+
+
+class DossierAccessEventModel(BaseModel):
+    """Audit trail for dossier access events"""
+    event_id: str
+    case_id: str
+    actor_id: str
+    actor_role: str
+    event_type: AccessEventType
+    occurred_at: datetime = Field(default_factory=datetime.utcnow)
+    hash_chain_prev: Optional[str] = None
+    hash_chain_curr: Optional[str] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+    
+    class Config:
+        collection = "dossier_access_events"

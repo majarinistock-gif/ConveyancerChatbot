@@ -54,6 +54,7 @@ async def connect_to_mongodb():
 async def create_indexes():
     """
     Create necessary indexes for optimal query performance
+    Includes indexes for new SLA, ledger, and audit collections
     """
     try:
         # Index on conveyancers province field
@@ -83,6 +84,64 @@ async def create_indexes():
         # Index on applications verification status
         await database.applications.create_index([("verification.status", ASCENDING)])
         logger.info("Created index on applications.verification.status")
+        
+        # NEW: Index on applications case_status for SLA queries
+        await database.applications.create_index([("case_status", ASCENDING)])
+        logger.info("Created index on applications.case_status")
+        
+        # NEW: Index on applications conflict_check_status
+        await database.applications.create_index([("conflict_check_status", ASCENDING)])
+        logger.info("Created index on applications.conflict_check_status")
+        
+        # NEW: Index on sla_timers deadline_at for timeout checking
+        await database.sla_timers.create_index([("deadline_at", ASCENDING)])
+        logger.info("Created index on sla_timers.deadline_at")
+        
+        # NEW: Index on sla_timers state for active timer queries
+        await database.sla_timers.create_index([("state", ASCENDING)])
+        logger.info("Created index on sla_timers.state")
+        
+        # NEW: Index on sla_timers case_id
+        await database.sla_timers.create_index([("case_id", ASCENDING)])
+        logger.info("Created index on sla_timers.case_id")
+        
+        # NEW: Index on platform_ledgers case_id
+        await database.platform_ledgers.create_index([("case_id", ASCENDING)])
+        logger.info("Created index on platform_ledgers.case_id")
+        
+        # NEW: Index on platform_ledgers idempotency_key for idempotency
+        await database.platform_ledgers.create_index([("idempotency_key", ASCENDING)], unique=True)
+        logger.info("Created unique index on platform_ledgers.idempotency_key")
+        
+        # NEW: Index on platform_ledgers allocation_type and state
+        await database.platform_ledgers.create_index([("allocation_type", ASCENDING), ("state", ASCENDING)])
+        logger.info("Created index on platform_ledgers.allocation_type, state")
+        
+        # NEW: Index on escrow_vaults case_id
+        await database.escrow_vaults.create_index([("case_id", ASCENDING)], unique=True)
+        logger.info("Created unique index on escrow_vaults.case_id")
+        
+        # NEW: Index on escrow_vaults firm_id
+        await database.escrow_vaults.create_index([("firm_id", ASCENDING)])
+        logger.info("Created index on escrow_vaults.firm_id")
+        
+        # NEW: Index on dossier_access_events case_id and occurred_at
+        await database.dossier_access_events.create_index([("case_id", ASCENDING), ("occurred_at", -1)])
+        logger.info("Created index on dossier_access_events.case_id, occurred_at")
+        
+        # NEW: Index on dossier_access_events actor_id
+        await database.dossier_access_events.create_index([("actor_id", ASCENDING)])
+        logger.info("Created index on dossier_access_events.actor_id")
+        
+        # NEW: Index on law_firms status
+        await database.law_firms.create_index([("status", ASCENDING)])
+        logger.info("Created index on law_firms.status")
+        
+        # NEW: Index on firm_practitioners firm_id
+        await database.firm_practitioners.create_index([("firm_id", ASCENDING)])
+        logger.info("Created index on firm_practitioners.firm_id")
+        
+        logger.info("All database indexes created successfully")
         
     except Exception as e:
         logger.error(f"Error creating indexes: {e}")

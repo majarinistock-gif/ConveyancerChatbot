@@ -11,6 +11,7 @@ from app.models import (
     ApplicationResponse, PaymentStatus
 )
 from app.file_service import file_storage_service
+from app.background_jobs import run_sla_timeout_check
 import logging
 
 logger = logging.getLogger(__name__)
@@ -396,3 +397,17 @@ async def api_health():
             "database": "disconnected",
             "error": str(e)
         }
+
+
+@router.post("/sla/check-timeouts")
+async def check_sla_timeouts():
+    """
+    Manually trigger SLA timeout check
+    This endpoint checks for expired 72-hour timers and processes defaults
+    """
+    try:
+        result = await run_sla_timeout_check()
+        return result
+    except Exception as e:
+        logger.error(f"Error checking SLA timeouts: {e}")
+        raise HTTPException(status_code=500, detail="Failed to check SLA timeouts")
