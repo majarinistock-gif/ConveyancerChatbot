@@ -45,9 +45,9 @@ app.add_middleware(
 )
 
 # Include routers
-app.include_router(webhook_router, prefix="/webhook")
-app.include_router(api_router, prefix="/api")
-app.include_router(payment_callback_router, prefix="/api/payment")
+app.include_router(webhook_router, prefix="/webhook", tags=["webhook"])
+app.include_router(api_router, prefix="/api", tags=["api"])
+app.include_router(payment_callback_router, prefix="/api/payment", tags=["payment"])
 
 # Root endpoint
 @app.get("/")

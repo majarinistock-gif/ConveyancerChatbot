@@ -15,6 +15,7 @@ router = APIRouter()
 
 
 @router.get("/")
+@router.get("")
 async def webhook_verify(request: Request):
     """
     Meta webhook verification endpoint
@@ -23,7 +24,7 @@ async def webhook_verify(request: Request):
     mode = request.query_params.get("hub.mode")
     token = request.query_params.get("hub.verify_token")
     challenge = request.query_params.get("hub.challenge")
-    
+
     if mode and token:
         if mode == "subscribe" and token == settings.WHATSAPP_VERIFY_TOKEN:
             logger.info("Webhook verified successfully")
@@ -31,11 +32,12 @@ async def webhook_verify(request: Request):
         else:
             logger.warning(f"Webhook verification failed. Token mismatch: {token}")
             raise HTTPException(status_code=403, detail="Verification failed")
-    
+
     raise HTTPException(status_code=400, detail="Invalid request")
 
 
 @router.post("/")
+@router.post("")
 async def webhook_receive(request: Request, background_tasks: BackgroundTasks):
     """
     Main webhook endpoint for receiving WhatsApp messages
@@ -45,7 +47,7 @@ async def webhook_receive(request: Request, background_tasks: BackgroundTasks):
         # Parse incoming webhook data
         data = await request.json()
         logger.info(f"Received webhook: {data}")
-        
+
         # Extract message data
         if data.get("object") == "whatsapp_business_account":
             for entry in data.get("entry", []):
@@ -59,9 +61,9 @@ async def webhook_receive(request: Request, background_tasks: BackgroundTasks):
                                 message,
                                 change.get("value", {})
                             )
-        
+
         return {"status": "success"}
-    
+
     except Exception as e:
         logger.error(f"Error processing webhook: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")

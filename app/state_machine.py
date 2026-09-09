@@ -61,7 +61,7 @@ async def get_or_create_session(phone_number: str) -> SessionModel:
     else:
         # Create new session
         new_session = SessionModel(
-            phone_number=phone_number,
+            _id=phone_number,
             current_step=ConversationState.GREETING
         )
         await database.sessions.insert_one(new_session.model_dump(by_alias=True))
