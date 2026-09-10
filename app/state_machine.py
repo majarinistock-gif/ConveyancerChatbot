@@ -27,26 +27,32 @@ async def process_message(message: Dict[str, Any], metadata: Dict[str, Any]):
         phone_number = message.get("from")
         message_type = message.get("type")
         content = message.get(message_type, {})
-        
+
+        # Skip status updates (they don't have 'from' field)
+        if not phone_number:
+            logger.info("Skipping status update (no phone number)")
+            return
+
         logger.info(f"Processing message from {phone_number}: {message_type}")
-        
+
         # Get or create user session
         session = await get_or_create_session(phone_number)
-        
+
         # Process based on current state
         response = await handle_state_transition(session, message_type, content, metadata)
-        
+
         # Send response
         if response:
             await send_message(phone_number, response)
-        
+
         # Update session
         await update_session(phone_number, session)
-        
+
     except Exception as e:
         logger.error(f"Error processing message: {e}")
-        # Send error message to user
-        await send_message(phone_number, "Sorry, I encountered an error. Please try again.")
+        # Send error message to user (only if phone_number exists)
+        if phone_number:
+            await send_message(phone_number, "Sorry, I encountered an error. Please try again.")
 
 
 async def get_or_create_session(phone_number: str) -> SessionModel:
