@@ -23,9 +23,9 @@ services:
 
     # Health check disabled to prevent shutdown loop
     # healthCheckPath: /health
-    
-    # Auto-deploy configuration
-    autoDeploy: true
+
+    # Auto-deploy disabled to prevent continuous redeployment loop
+    autoDeploy: false
     
     # Branch configuration
     branch: main
