@@ -1,0 +1,27 @@
+# Render.com Deployment Configuration
+# This file explicitly disables auto-deploy to prevent shutdown loop
+
+services:
+  - type: web
+    name: whatsapp-conveyancing-bot
+    runtime: python
+    plan: free
+    
+    # Build configuration
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn main:app --workers 1 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --timeout 120
+    
+    # Environment variables
+    envVars:
+      - key: ENVIRONMENT
+        value: sandbox
+      - key: PORT
+        value: 8000
+      - key: PYTHON_VERSION
+        value: 3.9.0
+
+    # Disable auto-deploy to prevent continuous redeployment loop
+    autoDeploy: false
+    
+    # Branch configuration
+    branch: main
