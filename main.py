@@ -51,6 +51,7 @@ app.include_router(payment_callback_router, prefix="/api/payment", tags=["paymen
 
 # Root endpoint
 @app.get("/")
+@app.head("/")
 async def root():
     """Root endpoint with service information"""
     return {
