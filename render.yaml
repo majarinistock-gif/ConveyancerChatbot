@@ -10,7 +10,7 @@ services:
     
     # Build configuration
     buildCommand: pip install -r requirements.txt
-    startCommand: python main.py
+    startCommand: uvicorn main:app --host 0.0.0.0 --port 8000
     
     # Environment variables (these should be set in Render dashboard)
     envVars:
@@ -20,9 +20,9 @@ services:
         value: 8000
       - key: PYTHON_VERSION
         value: 3.9.0
-    
-    # Health check
-    healthCheckPath: /health
+
+    # Health check disabled to prevent shutdown loop
+    # healthCheckPath: /health
     
     # Auto-deploy configuration
     autoDeploy: true
