@@ -59,6 +59,11 @@ class WhatsAppService:
             
             async with httpx.AsyncClient() as client:
                 response = await client.post(url, json=payload, headers=headers)
+                
+                # Log response details for debugging
+                logger.info(f"Meta API response status: {response.status_code}")
+                logger.info(f"Meta API response body: {response.text}")
+                
                 response.raise_for_status()
                 result = response.json()
             
@@ -67,6 +72,9 @@ class WhatsAppService:
             
         except httpx.HTTPError as e:
             logger.error(f"HTTP error sending WhatsApp message: {e}")
+            # Try to get response body if available
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"Meta API error response: {e.response.text}")
             return {"success": False, "error": str(e)}
         except Exception as e:
             logger.error(f"Error sending WhatsApp message: {e}")
