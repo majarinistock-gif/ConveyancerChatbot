@@ -317,10 +317,6 @@ class WhatsAppService:
         # Remove any non-digit characters
         clean_number = ''.join(filter(str.isdigit, phone_number))
         
-        # Remove leading + if present
-        if clean_number.startswith(''):
-            clean_number = clean_number[1:]
-        
         return clean_number
 
 
