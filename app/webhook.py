@@ -53,14 +53,27 @@ async def webhook_receive(request: Request, background_tasks: BackgroundTasks):
             for entry in data.get("entry", []):
                 for change in entry.get("changes", []):
                     if change.get("field") == "messages":
-                        messages = change.get("value", {}).get("messages", [])
-                        for message in messages:
-                            # Process message in background
-                            background_tasks.add_task(
-                                process_message,
-                                message,
-                                change.get("value", {})
-                            )
+                        value = change.get("value", {})
+                        
+                        # CHECK FOR STATUS UPDATES (delivered, read, sent)
+                        if "statuses" in value:
+                            status_info = value["statuses"][0]
+                            status = status_info.get("status")
+                            recipient_id = status_info.get("recipient_id")
+                            logger.info(f"Skipping status update: {status} for {recipient_id}")
+                            continue  # Skip to next change
+                        
+                        # CHECK FOR ACTUAL TEXT MESSAGES
+                        if "messages" in value:
+                            messages = value["messages"]
+                            for message in messages:
+                                # Process message in background
+                                background_tasks.add_task(
+                                    process_message,
+                                    message,
+                                    value
+                                )
+                                logger.info(f"Queued message for processing: {message.get('id')}")
 
         return {"status": "success"}
 
