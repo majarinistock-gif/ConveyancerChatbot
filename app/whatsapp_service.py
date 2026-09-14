@@ -39,6 +39,9 @@ class WhatsAppService:
             # Get valid access token
             token = await get_valid_token()
             
+            # Log phone number for debugging
+            logger.info(f"Attempting to send message to phone number: {phone_number}")
+            
             # Prepare message payload
             payload = {
                 "messaging_product": "whatsapp",
@@ -49,6 +52,9 @@ class WhatsAppService:
                     "preview_url": preview_url
                 }
             }
+            
+            # Log payload for debugging
+            logger.info(f"Sending payload to Meta: {payload}")
             
             # Send message
             url = f"{self.base_url}/{self.phone_number_id}/messages"
