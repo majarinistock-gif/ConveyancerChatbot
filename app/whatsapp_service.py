@@ -40,7 +40,7 @@ class WhatsAppService:
             token = await get_valid_token()
             
             # Log phone number for debugging
-            logger.info(f"Attempting to send message to phone number: {phone_number}")
+            logger.error(f"Attempting to send message to phone number: {phone_number}")
             
             # Prepare message payload
             payload = {
@@ -54,7 +54,7 @@ class WhatsAppService:
             }
             
             # Log payload for debugging
-            logger.info(f"Sending payload to Meta: {payload}")
+            logger.error(f"Sending payload to Meta: {payload}")
             
             # Send message
             url = f"{self.base_url}/{self.phone_number_id}/messages"
