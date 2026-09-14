@@ -23,6 +23,10 @@ async def process_message(message: Dict[str, Any], metadata: Dict[str, Any]):
     Process incoming WhatsApp message through state machine
     """
     try:
+        # Log the full message for debugging
+        logger.error(f"Full message object: {message}")
+        logger.error(f"Full metadata object: {metadata}")
+        
         # Extract message data
         phone_number = message.get("from")
         message_type = message.get("type")
