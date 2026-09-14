@@ -43,10 +43,13 @@ async def webhook_receive(request: Request, background_tasks: BackgroundTasks):
     Main webhook endpoint for receiving WhatsApp messages
     Processes incoming messages in the background
     """
+    # Log at the very start to confirm request reached the endpoint
+    logger.error(f"WEBHOOK REQUEST RECEIVED - Method: {request.method}, URL: {request.url}")
+    
     try:
         # Parse incoming webhook data
         data = await request.json()
-        logger.info(f"Received webhook: {data}")
+        logger.error(f"Received webhook: {data}")
 
         # Extract message data
         if data.get("object") == "whatsapp_business_account":
